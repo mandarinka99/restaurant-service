@@ -6,15 +6,13 @@ import {
   TextField,
 } from "@material-ui/core";
 import QRCode from "qrcode";
-import { useRef, useState } from "react";
-import QrReader from "react-qr-reader";
+import { useState } from "react";
 
 const CreateQrCode = () => {
   const [url, setUrl] = useState("");
   const [imageUrl, setImageUrl] = useState();
-  const [scanResaltFile, setScanResaltFile] = useState("");
+
   const classes = useStyles();
-  const qrRef = useRef(null);
 
   const genereteQrCode = async () => {
     try {
@@ -68,32 +66,3 @@ const useStyles = makeStyles((theme) => ({
 }));
 
 export default CreateQrCode;
-
-// read qrCode
-// <Button
-//   className={classes.button}
-//   variant="contained"
-//   color="secondary"
-//   onClick={() => {}}
-// >
-//   Scan QR Code
-// </Button>
-// <QrReader
-//   ref={qrRef}
-//   delay={300}
-//   style={{ width: "100%" }}
-//   onError={handleErrorFile}
-//   onScan={handleScanFile}
-//   legacyMode
-// />
-// <h2>Scanned Code</h2>
-
-// const handleErrorFile = (error) => {
-//   console.log(error);
-// };
-
-// const handleScanFile = (result) => {
-//   if (result) {
-//     setScanResaltFile(result);
-//   }
-// };
