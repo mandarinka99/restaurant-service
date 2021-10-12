@@ -1,25 +1,67 @@
-import {
-  Button,
-  Container,
-  makeStyles,
-  Card,
-  TextField,
-} from "@material-ui/core";
+import { Button, Container, makeStyles, Card, Icon } from "@material-ui/core";
+import axios from "axios";
 import QRCode from "qrcode";
-import { useState } from "react";
+import { useEffect, useState } from "react";
+
+const baseURL =
+  "https://new-project-d3d31-default-rtdb.europe-west1.firebasedatabase.app/";
+
+const fetchTables = async () => {
+  try {
+    const { data } = await axios.get(`${baseURL}restaurant.json`);
+    const res = data
+      ? Object.entries(data).map(([id, table]) => ({ id, ...table }))
+      : [];
+    console.log(`res`, res);
+    return res;
+  } catch (error) {
+    throw error;
+  }
+};
+
+const addTable = async (tableNumber) => {
+  try {
+    const { data } = await axios.post(`${baseURL}restaurant.json`, {
+      tableNumber: tableNumber,
+    });
+    return data;
+  } catch (error) {
+    throw error;
+  }
+};
 
 const CreateQrCode = () => {
-  const [url, setUrl] = useState("");
-  const [imageUrl, setImageUrl] = useState();
+  const [imagesUrl, setImagesUrl] = useState([]);
 
   const classes = useStyles();
 
-  const genereteQrCode = async () => {
+  useEffect(() => {
+    fetchTables().then((res) => {
+      const qrArrPromise = [];
+      res.map((item) => qrArrPromise.push(genereteQrCode(item.tableNumber)));
+
+      Promise.all(qrArrPromise).then((qr) => {
+        setImagesUrl(qr);
+      });
+    });
+  }, []);
+
+  const onClick = (e) => {
+    addTable(imagesUrl.length + 1);
+    const newArrImagesUrl = [...imagesUrl];
+    genereteQrCode(imagesUrl.length + 1).then((res) => {
+      newArrImagesUrl.push(res);
+      console.log(`newArrImagesUrl`, newArrImagesUrl);
+      setImagesUrl(newArrImagesUrl);
+    });
+  };
+
+  const genereteQrCode = (num) => {
     try {
-      const response = await QRCode.toDataURL(url);
-      setImageUrl(response);
-    } catch (err) {
-      console.log(err);
+      const mainUrl = `http://localhost:3000/table?number=${num}`;
+      return QRCode.toDataURL(mainUrl);
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -27,20 +69,24 @@ const CreateQrCode = () => {
     <Container className={classes.container}>
       <Card>
         <h2 className={classes.title}>Generate QR Code</h2>
-        <TextField label="Enter URL" onChange={(e) => setUrl(e.target.value)} />
         <Button
-          className={classes.button}
-          variant="contained"
+          className={classes.buttonAdd}
+          variant="outlined"
           color="primary"
-          onClick={() => genereteQrCode()}
+          onClick={onClick}
         >
-          Generate
+          <Icon fontSize="inherit">add_circle</Icon>
         </Button>
-        <br />
-        {imageUrl && (
-          <a href={imageUrl} download>
-            <img src={imageUrl} alt="qrCode" />
-          </a>
+        {imagesUrl.length && (
+          <ul>
+            {imagesUrl.map((imageUrl, index) => (
+              <li key={index + 1}>
+                <a href={imageUrl} download>
+                  <img src={imageUrl} alt="qrCode" />
+                </a>
+              </li>
+            ))}
+          </ul>
         )}
       </Card>
     </Container>
@@ -62,6 +108,12 @@ const useStyles = makeStyles((theme) => ({
   },
   button: {
     marginTop: 10,
+  },
+  buttonAdd: {
+    fontSize: 100,
+    width: 300,
+    height: 300,
+    marginTop: 20,
   },
 }));
 
