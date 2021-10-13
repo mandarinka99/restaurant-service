@@ -1,65 +1,59 @@
 import { Button, Container, makeStyles, Card, Icon } from "@material-ui/core";
-import axios from "axios";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
+import { addTable, fetchQueries, fetchTables } from "../../utils";
 
-const baseURL =
-  "https://new-project-d3d31-default-rtdb.europe-west1.firebasedatabase.app/";
-
-const fetchTables = async () => {
-  try {
-    const { data } = await axios.get(`${baseURL}restaurant.json`);
-    const res = data
-      ? Object.entries(data).map(([id, table]) => ({ id, ...table }))
-      : [];
-    console.log(`res`, res);
-    return res;
-  } catch (error) {
-    throw error;
-  }
-};
-
-const addTable = async (tableNumber) => {
-  try {
-    const { data } = await axios.post(`${baseURL}restaurant.json`, {
-      tableNumber: tableNumber,
-    });
-    return data;
-  } catch (error) {
-    throw error;
-  }
-};
+let needInterval = true;
 
 const CreateQrCode = () => {
-  const [imagesUrl, setImagesUrl] = useState([]);
+  const [tablesList, setTablesList] = useState([]);
+  const [queries, setQueries] = useState([]);
 
   const classes = useStyles();
 
   useEffect(() => {
     fetchTables().then((res) => {
-      const qrArrPromise = [];
-      res.map((item) => qrArrPromise.push(genereteQrCode(item.tableNumber)));
+      const tablesListArrPromise = [];
+      res.map((item) =>
+        tablesListArrPromise.push(genereteQrCode(item.tableNumber, item.id))
+      );
 
-      Promise.all(qrArrPromise).then((qr) => {
-        setImagesUrl(qr);
+      Promise.all(tablesListArrPromise).then((qrCodes) => {
+        const mapped = qrCodes.map((item) => ({
+          qr: item.qr,
+          tableNumber: item.num,
+          id: item.id,
+        }));
+        console.log(`mapped`, mapped);
+        setTablesList(mapped);
       });
     });
   }, []);
 
+  if (needInterval) {
+    needInterval = false;
+    setInterval(() => {
+      fetchQueries().then((res) => {
+        setQueries(res);
+      });
+    }, 10000);
+  }
+  console.log("res", queries);
+
   const onClick = (e) => {
-    addTable(imagesUrl.length + 1);
-    const newArrImagesUrl = [...imagesUrl];
-    genereteQrCode(imagesUrl.length + 1).then((res) => {
-      newArrImagesUrl.push(res);
-      console.log(`newArrImagesUrl`, newArrImagesUrl);
-      setImagesUrl(newArrImagesUrl);
+    addTable(tablesList.length + 1);
+    const newArrTablesList = [...tablesList];
+    genereteQrCode(tablesList.length + 1).then((res) => {
+      newArrTablesList.push(res);
+      setTablesList(newArrTablesList);
     });
   };
 
-  const genereteQrCode = (num) => {
+  const genereteQrCode = async (num, id) => {
     try {
-      const mainUrl = `http://localhost:3000/table?number=${num}`;
-      return QRCode.toDataURL(mainUrl);
+      const mainUrl = `http://localhost:3000/table/${num}`;
+      const qr = await QRCode.toDataURL(mainUrl);
+      return { qr, num, id };
     } catch (error) {
       console.log(error);
     }
@@ -77,12 +71,12 @@ const CreateQrCode = () => {
         >
           <Icon fontSize="inherit">add_circle</Icon>
         </Button>
-        {imagesUrl.length && (
+        {tablesList.length && (
           <ul>
-            {imagesUrl.map((imageUrl, index) => (
+            {tablesList.map((table, index) => (
               <li key={index + 1}>
-                <a href={imageUrl} download>
-                  <img src={imageUrl} alt="qrCode" />
+                <a href={table.qr} download>
+                  <img src={table.qr} alt="qrCode" />
                 </a>
               </li>
             ))}

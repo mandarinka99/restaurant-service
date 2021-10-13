@@ -14,7 +14,7 @@ const App = () => {
           <Route path="/qr" exact>
             <CreateQrCode />
           </Route>
-          <Route path="/table" exact>
+          <Route path="/table/:number" exact>
             <TableNumber />
           </Route>
           <Route path="/">
