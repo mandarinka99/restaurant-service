@@ -1,4 +1,5 @@
 import { Button, Container, makeStyles, Card, Icon } from "@material-ui/core";
+import { red } from "@material-ui/core/colors";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
 import { addTable, fetchQueries, fetchTables } from "../../utils";
@@ -34,7 +35,11 @@ const CreateQrCode = () => {
     needInterval = false;
     setInterval(() => {
       fetchQueries().then((res) => {
-        setQueries(res);
+        const activeTable = [];
+        res.forEach((item) => {
+          activeTable.push(Number(item.tableNumber));
+        });
+        setQueries(activeTable);
       });
     }, 10000);
   }
@@ -63,20 +68,31 @@ const CreateQrCode = () => {
     <Container className={classes.container}>
       <Card>
         <h2 className={classes.title}>Generate QR Code</h2>
-        <Button
-          className={classes.buttonAdd}
-          variant="outlined"
-          color="primary"
-          onClick={onClick}
-        >
-          <Icon fontSize="inherit">add_circle</Icon>
-        </Button>
-        {tablesList.length && (
-          <ul>
+
+        {!!tablesList.length && (
+          <ul className={classes.qrList}>
+            <li className={classes.qr}>
+              <Button
+                className={classes.buttonAdd}
+                variant="outlined"
+                color="primary"
+                onClick={onClick}
+              >
+                <Icon fontSize="inherit">add_circle</Icon>
+              </Button>
+            </li>
             {tablesList.map((table, index) => (
-              <li key={index + 1}>
+              <li
+                key={index + 1}
+                className={[
+                  classes[
+                    queries.includes(table.tableNumber) ? "isActiveQr" : "qr"
+                  ],
+                ].join(" ")}
+              >
+                <h3>Table - {table.tableNumber}</h3>
                 <a href={table.qr} download>
-                  <img src={table.qr} alt="qrCode" />
+                  <img src={table.qr} alt="qrCode" className={classes.qrImg} />
                 </a>
               </li>
             ))}
@@ -100,14 +116,39 @@ const useStyles = makeStyles((theme) => ({
     padding: 20,
     margin: 0,
   },
-  button: {
-    marginTop: 10,
-  },
   buttonAdd: {
     fontSize: 100,
-    width: 300,
-    height: 300,
-    marginTop: 20,
+    width: 335,
+    height: 335,
+  },
+  qrList: {
+    padding: 20,
+    display: "flex",
+    flexWrap: "wrap",
+    justifyContent: "flex-start",
+  },
+  qr: {
+    margin: 20,
+    width: 335,
+    height: 335,
+    border: "1px solid #3f51b5",
+    borderRadius: 5,
+    listStyle: "none",
+    display: "block",
+    textAlign: "center",
+  },
+  isActiveQr: {
+    margin: 20,
+    width: 335,
+    height: 335,
+    border: "3px solid red",
+    borderRadius: 5,
+    listStyle: "none",
+    display: "block",
+    textAlign: "center",
+  },
+  qrImg: {
+    width: 230,
   },
 }));
 

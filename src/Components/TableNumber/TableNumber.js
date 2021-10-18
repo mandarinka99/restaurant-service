@@ -19,7 +19,7 @@ const TableNumber = () => {
 
   return (
     <>
-      <h2>Message sent</h2>
+      <h2>The waiter runs to you</h2>
     </>
   );
 };
