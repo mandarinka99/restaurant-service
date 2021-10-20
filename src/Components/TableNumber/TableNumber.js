@@ -1,18 +1,17 @@
 import { useEffect } from "react";
 import { useParams } from "react-router";
-import { addQuery, fetchTables } from "../../utils";
+import { fetchTables, updateTable } from "../../utils";
 
 const TableNumber = () => {
   const { number } = useParams();
-  console.log(`number`, number);
 
   useEffect(() => {
     fetchTables().then((res) => {
-      const findNumber = res.find(
+      const findIndex = res.findIndex(
         (item) => `${item.tableNumber}` === `${number}`
       );
-      if (findNumber) {
-        addQuery(number);
+      if (findIndex >= 0) {
+        updateTable(res[findIndex].id, true);
       }
     });
   }, []);

@@ -26,24 +26,12 @@ export const addTable = async (tableNumber) => {
   }
 };
 
-export const addQuery = async (number) => {
+export const updateTable = async (id, isActive = false) => {
   try {
-    const { data } = await axios.post(`${baseURL}query.json`, {
-      tableNumber: number,
+    const { data } = await axios.patch(`${baseURL}restaurant/${id}.json`, {
+      isActive: isActive,
     });
     return data;
-  } catch (error) {
-    throw error;
-  }
-};
-
-export const fetchQueries = async () => {
-  try {
-    const { data } = await axios.get(`${baseURL}query.json`);
-    const res = data
-      ? Object.entries(data).map(([id, table]) => ({ id, ...table }))
-      : [];
-    return res;
   } catch (error) {
     throw error;
   }

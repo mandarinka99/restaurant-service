@@ -1,103 +1,101 @@
 import { Button, Container, makeStyles, Card, Icon } from "@material-ui/core";
-import { red } from "@material-ui/core/colors";
 import QRCode from "qrcode";
 import { useEffect, useState } from "react";
-import { addTable, fetchQueries, fetchTables } from "../../utils";
+import { addTable, fetchTables, updateTable } from "../../utils";
 
 let needInterval = true;
 
 const CreateQrCode = () => {
   const [tablesList, setTablesList] = useState([]);
-  const [queries, setQueries] = useState([]);
 
   const classes = useStyles();
 
-  useEffect(() => {
+  const getTablesList = () => {
     fetchTables().then((res) => {
       const tablesListArrPromise = [];
-      res.map((item) =>
-        tablesListArrPromise.push(genereteQrCode(item.tableNumber, item.id))
-      );
+      res.map((item) => tablesListArrPromise.push(genereteQrCode(item)));
 
       Promise.all(tablesListArrPromise).then((qrCodes) => {
-        const mapped = qrCodes.map((item) => ({
-          qr: item.qr,
-          tableNumber: item.num,
-          id: item.id,
-        }));
-        console.log(`mapped`, mapped);
-        setTablesList(mapped);
+        setTablesList(qrCodes);
       });
     });
+  };
+
+  useEffect(() => {
+    getTablesList();
   }, []);
+
+  console.log(`tablesList`, tablesList);
 
   if (needInterval) {
     needInterval = false;
     setInterval(() => {
-      fetchQueries().then((res) => {
-        const activeTable = [];
-        res.forEach((item) => {
-          activeTable.push(Number(item.tableNumber));
-        });
-        setQueries(activeTable);
-      });
+      getTablesList();
     }, 10000);
   }
-  console.log("res", queries);
 
   const onClick = (e) => {
     addTable(tablesList.length + 1);
     const newArrTablesList = [...tablesList];
     genereteQrCode(tablesList.length + 1).then((res) => {
-      newArrTablesList.push(res);
+      newArrTablesList.push({ tableNumber: tablesList.length + 1, ...res });
       setTablesList(newArrTablesList);
     });
   };
 
-  const genereteQrCode = async (num, id) => {
+  const genereteQrCode = async (item) => {
     try {
-      const mainUrl = `http://localhost:3000/table/${num}`;
+      const mainUrl = `http://localhost:3000/table/${item.tableNumber}`;
       const qr = await QRCode.toDataURL(mainUrl);
-      return { qr, num, id };
+      return { qr, ...item };
     } catch (error) {
       console.log(error);
     }
+  };
+
+  const deleteActiveTable = async (id, isActive) => {
+    await updateTable(id, isActive);
+    getTablesList();
   };
 
   return (
     <Container className={classes.container}>
       <Card>
         <h2 className={classes.title}>Generate QR Code</h2>
-
-        {!!tablesList.length && (
-          <ul className={classes.qrList}>
-            <li className={classes.qr}>
-              <Button
-                className={classes.buttonAdd}
-                variant="outlined"
-                color="primary"
-                onClick={onClick}
-              >
-                <Icon fontSize="inherit">add_circle</Icon>
-              </Button>
-            </li>
-            {tablesList.map((table, index) => (
+        <ul className={classes.qrList}>
+          <li className={classes.qr}>
+            <Button
+              className={classes.buttonAdd}
+              variant="outlined"
+              color="primary"
+              onClick={onClick}
+            >
+              <Icon fontSize="inherit">add_circle</Icon>
+            </Button>
+          </li>
+          {!!tablesList.length &&
+            tablesList.map((table) => (
               <li
-                key={index + 1}
-                className={[
-                  classes[
-                    queries.includes(table.tableNumber) ? "isActiveQr" : "qr"
-                  ],
-                ].join(" ")}
+                key={table.id}
+                className={[classes[table.isActive ? "isActiveQr" : "qr"]].join(
+                  " "
+                )}
               >
                 <h3>Table - {table.tableNumber}</h3>
-                <a href={table.qr} download>
+                <a href={table.qr} download className={classes.qrLink}>
                   <img src={table.qr} alt="qrCode" className={classes.qrImg} />
                 </a>
+                <Button
+                  variant="contained"
+                  size="small"
+                  color="primary"
+                  onClick={() => deleteActiveTable(table.id, false)}
+                >
+                  OK
+                </Button>
               </li>
             ))}
-          </ul>
-        )}
+        </ul>
       </Card>
     </Container>
   );
@@ -146,6 +144,9 @@ const useStyles = makeStyles((theme) => ({
     listStyle: "none",
     display: "block",
     textAlign: "center",
+  },
+  qrLink: {
+    display: "block",
   },
   qrImg: {
     width: 230,
